@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 22 22:57:19 2020
+
+@author: mason
+"""
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200919.txt')
+df2 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200912.txt')
+
+df3 = pd.concat([df, df2])
+
+df3['DATETIME'] = pd.to_datetime(df3['DATE'] + ' ' + df3['TIME'])
+
+df3.drop(columns=['DATE', 'TIME'], inplace=True)
+
+df_station_ind = df3.groupby(['STATION', df3['DATETIME'].dt.date]).first()
+
+df_station_ind.drop(columns=['DATETIME'], inplace=True)
+df_station_ind.reset_index(level=1, inplace=True)
+
+df_diff = df_station_ind.copy('deep')
+df_diff.columns = df_diff.columns.str.strip()
+
+#index_len = len(df_diff.index.unique())
+
+for index in df_diff.index.unique():
+    df_diff['ENTRIES'].loc[index] = df_diff['ENTRIES'].loc[index].diff()
+    df_diff['EXITS'].loc[index] = df_diff['EXITS'].loc[index].diff()
+
+df_diff = df_diff.dropna(how='any')
+
+df_diff.reset_index(level=0, inplace=True)
+
+df_diff = df_diff.drop(df_diff[df_diff['ENTRIES'] < 0].index)
+
+df_diff[df_diff.STATION == '1 AV']
+
+entries_sums = df_diff.groupby('STATION').ENTRIES.sum()
+
+entries_sums.sort_values(ascending=False, inplace=True)
+
+#####
+
+'''
+df_station_loc = pd.read_csv('http://web.mta.info/developers/data/nyct/subway/Stations.csv')
+
+df_station_loc.head()
+
+station_series_1 = pd.Series(df_diff['STATION'].unique())
+station_series_2 = df_station_loc['Stop Name']
+
+
+
+def station_check(series1, series2):
+    bool_check = []
+    for station in series1.unique():
+        bool_check.append(bool(station in series2.unique()))
+    return bool_check
+
+station_series_1 = station_series_1.str.lower()
+station_series_2 = station_series_2.str.lower()
+
+bool_check = station_check(station_series_1, station_series_2)
+sum(bool_check)
+
+station_series_1 = station_series_1.str.replace('-', '')
+station_series_2 = station_series_2.str.replace('- ', '')
+
+bool_check = station_check(station_series_1, station_series_2)
+sum(bool_check)
+
+station_series_1.sort_values(inplace=True)
+station_series_2.sort_values(inplace=True)
+station_series_2.drop_duplicates(inplace=True)
+
+station_series_2.index = list(range(0, len(station_series_2.index)))
+
+entries_sums.index = entries_sums.index.str.lower()
+
+entries_sums.sort_index(inplace=True)
+
+entries_sums = entries_sums.drop(entries_sums.index[17])
+station_series_2 = station_series_2.drop(24)
+station_series_2 = station_series_2.drop(36)
+
+# Join, sort, then manually fix bad values
+######
+'''
+
+# Time series for weekdays (top 10-20 entries) 
+
+df_diff['DATETIME'] = pd.to_datetime(df_diff['DATETIME'])
+
+plt.figure(figsize = [13,10])
+for station in entries_sums.iloc[1:11].index:
+    plt.plot(df_diff[df_diff['STATION'] == station].DATETIME.dt.date, df_diff[df_diff['STATION'] == station].ENTRIES)
+   
+plt.legend(entries_sums.iloc[1:11].index,shadow = True, loc = 0);
+plt.xlabel('DATE')
+plt.ylabel('ENTRIES')
+plt.title('Top 10 Stations for Entries')
+
+# EXITS
+
+df_diff = df_diff.drop(df_diff[df_diff['EXITS'] < 0].index)
+
+exits_sums = df_diff.groupby('STATION').EXITS.sum()
+
+exits_sums.sort_values(ascending=False, inplace=True)
+
+exits_sums.iloc[:20]
+
+plt.figure(figsize = [13,10])
+for station in exits_sums.iloc[:11].index:
+    plt.plot(df_diff[df_diff['STATION'] == station].DATETIME.dt.date, df_diff[df_diff['STATION'] == station].EXITS)
+   
+plt.legend(exits_sums.iloc[:11].index,shadow = True, loc = 0);
+plt.xlabel('DATE')
+plt.ylabel('EXITS')
+plt.title('Top 10 Stations for EXITS')
+
+#plt.hist(exits_sums, bins=100)
+
+# night life
+
+df_night = df3.groupby(['STATION', df3['DATETIME'].dt.date]).tail(3)
+df_night = df_night.drop(df_night[df_night['DESC'] != 'REGULAR'].index)
+df_night.columns = df_night.columns.str.strip()
+df_night.reset_index(level=0, inplace=True)
+
+
+
+
+df_night['EXITS'] = df_night.groupby(['STATION', df_night['DATETIME'].dt.date]).EXITS.diff()
+        
+df_night = df_night.dropna(how='any')
+
+
+df_night = df_night.drop(df_night[df_night['EXITS'] < 0].index)
+
+df_night[df_night.STATION == '1 AV']
+
+exits_sums_night = df_night.groupby('STATION').EXITS.sum()
+
+exits_sums_night.sort_values(ascending=False, inplace=True)
+
+exits_sums_night.iloc[4:24]
+
