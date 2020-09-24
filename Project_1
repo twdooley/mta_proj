@@ -10,14 +10,20 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200919.txt')
-df2 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200912.txt')
+sep1920 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200919.txt')
+sep1220 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200912.txt')
+sep0720 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200905.txt')
+aug2920 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200829.txt')
+aug2220 = pd.read_csv('http://web.mta.info/developers/data/nyct/turnstile/turnstile_200822.txt')
 
-df3 = pd.concat([df, df2])
+
+df3 = pd.concat([sep1920, sep1220, sep0720, aug2920, aug2220])
 
 df3['DATETIME'] = pd.to_datetime(df3['DATE'] + ' ' + df3['TIME'])
 
 df3.drop(columns=['DATE', 'TIME'], inplace=True)
+df3 = df3.drop(df3[df3['DESC'] != 'REGULAR'].index)
+
 
 df_station_ind = df3.groupby(['STATION', df3['DATETIME'].dt.date]).first()
 
@@ -98,10 +104,10 @@ station_series_2 = station_series_2.drop(36)
 df_diff['DATETIME'] = pd.to_datetime(df_diff['DATETIME'])
 
 plt.figure(figsize = [13,10])
-for station in entries_sums.iloc[1:11].index:
+for station in entries_sums.iloc[16:26].index:
     plt.plot(df_diff[df_diff['STATION'] == station].DATETIME.dt.date, df_diff[df_diff['STATION'] == station].ENTRIES)
    
-plt.legend(entries_sums.iloc[1:11].index,shadow = True, loc = 0);
+plt.legend(entries_sums.iloc[16:26].index,shadow = True, loc = 0);
 plt.xlabel('DATE')
 plt.ylabel('ENTRIES')
 plt.title('Top 10 Stations for Entries')
@@ -114,13 +120,13 @@ exits_sums = df_diff.groupby('STATION').EXITS.sum()
 
 exits_sums.sort_values(ascending=False, inplace=True)
 
-exits_sums.iloc[:20]
+exits_sums.iloc[14:24]
 
 plt.figure(figsize = [13,10])
-for station in exits_sums.iloc[:11].index:
+for station in exits_sums.iloc[14:24].index:
     plt.plot(df_diff[df_diff['STATION'] == station].DATETIME.dt.date, df_diff[df_diff['STATION'] == station].EXITS)
    
-plt.legend(exits_sums.iloc[:11].index,shadow = True, loc = 0);
+plt.legend(exits_sums.iloc[14:24].index,shadow = True, loc = 0);
 plt.xlabel('DATE')
 plt.ylabel('EXITS')
 plt.title('Top 10 Stations for EXITS')
@@ -130,7 +136,6 @@ plt.title('Top 10 Stations for EXITS')
 # night life
 
 df_night = df3.groupby(['STATION', df3['DATETIME'].dt.date]).tail(3)
-df_night = df_night.drop(df_night[df_night['DESC'] != 'REGULAR'].index)
 df_night.columns = df_night.columns.str.strip()
 df_night.reset_index(level=0, inplace=True)
 
@@ -150,5 +155,5 @@ exits_sums_night = df_night.groupby('STATION').EXITS.sum()
 
 exits_sums_night.sort_values(ascending=False, inplace=True)
 
-exits_sums_night.iloc[4:24]
+exits_sums_night.iloc[3:23]
 
