@@ -96,8 +96,8 @@ def plot_income_data(income_data):
     folium_map = folium.Map(
         location=[40.738, -73.98],
         zoom_start=13,
-        tiles="CartoDB dark_matter",
-        width="50%",
+        tiles="CartoDB positron",
+        width="100%",
     )
 
     # for each row in the data, add a cicle marker
